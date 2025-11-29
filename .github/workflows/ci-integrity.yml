@@ -1,0 +1,38 @@
+name: EntenCI Integrity
+
+on:
+  check_suite:
+    types: [requested]
+  check_run:
+    types: [requested]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install
+
+      - name: Run EntenCI Analyzer
+        run: node src/analyzer.js
+
+      - name: Auto-fix and update lockfile
+        if: always()
+        run: |
+          if [ -f fix.patch ]; then
+            git config user.name "EntenCI Bot"
+            git config user.email "entenci@bot"
+            git apply --allow-empty fix.patch
+            git add .
+            git commit -m "EntenCI auto-fix"
+            git push
+          fi
